@@ -1,0 +1,323 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:wsc="http://www.mulesoft.org/schema/mule/wsc" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:apikit="http://www.mulesoft.org/schema/mule/mule-apikit" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd http://www.mulesoft.org/schema/mule/mule-apikit http://www.mulesoft.org/schema/mule/mule-apikit/current/mule-apikit.xsd 
+http://www.mulesoft.org/schema/mule/wsc http://www.mulesoft.org/schema/mule/wsc/current/mule-wsc.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+    <apikit:config name="banking-api-config" api="resource::1c574041-5a1b-4ed6-8e0f-82442d4bf767:banking-api:1.0.2:raml:zip:banking-api.raml" outboundHeadersMapName="outboundHeaders" httpStatusVarName="httpStatus" />
+	<wsc:config name="Web_Service_Consumer_Config" doc:name="Web Service Consumer Config" doc:id="8d04ac2b-f44d-495f-b511-ac1c213a729f" >
+		<wsc:connection wsdlLocation="http://35.194.51.90:6062/ws/employees.wsdl" service="EmployeePortService" port="EmployeePortSoap11" address="http://35.194.51.90:6062/ws" />
+	</wsc:config>
+	<flow name="banking-api-main">
+        <http:listener config-ref="HTTP_Listener_config" path="/api/*">
+            <http:response statusCode="#[vars.httpStatus default 200]">
+                <http:headers>#[vars.outboundHeaders default {}]</http:headers>
+            </http:response>
+            <http:error-response statusCode="#[vars.httpStatus default 500]">
+                <http:body>#[payload]</http:body>
+                <http:headers>#[vars.outboundHeaders default {}]</http:headers>
+            </http:error-response>
+        </http:listener>
+        <apikit:router config-ref="banking-api-config" />
+        <error-handler>
+            <on-error-propagate type="APIKIT:BAD_REQUEST">
+                <ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Bad request"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">400</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+            <on-error-propagate type="APIKIT:NOT_FOUND">
+                <ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Resource not found"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">404</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+            <on-error-propagate type="APIKIT:METHOD_NOT_ALLOWED">
+                <ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Method not allowed"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">405</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+            <on-error-propagate type="APIKIT:NOT_ACCEPTABLE">
+                <ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Not acceptable"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">406</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+            <on-error-propagate type="APIKIT:UNSUPPORTED_MEDIA_TYPE">
+                <ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Unsupported media type"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">415</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+            <on-error-propagate type="APIKIT:NOT_IMPLEMENTED">
+                <ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Not Implemented"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">501</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+        </error-handler>
+    </flow>
+    <flow name="banking-api-console">
+        <http:listener config-ref="HTTP_Listener_config" path="/console/*">
+            <http:response statusCode="#[vars.httpStatus default 200]">
+                <http:headers>#[vars.outboundHeaders default {}]</http:headers>
+            </http:response>
+            <http:error-response statusCode="#[vars.httpStatus default 500]">
+                <http:body>#[payload]</http:body>
+                <http:headers>#[vars.outboundHeaders default {}]</http:headers>
+            </http:error-response>
+        </http:listener>
+        <apikit:console config-ref="banking-api-config" />
+        <error-handler>
+            <on-error-propagate type="APIKIT:NOT_FOUND">
+                <ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Resource not found"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">404</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+        </error-handler>
+    </flow>
+    <flow name="delete:\accounts\(account_id):banking-api-config">
+        <ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core">
+            <ee:variables>
+                <ee:set-variable variableName="account_id">attributes.uriParams.'account_id'</ee:set-variable>
+            </ee:variables>
+        </ee:transform>
+        <logger level="INFO" message="delete:\accounts\(account_id):banking-api-config" />
+    </flow>
+    <flow name="delete:\customers\(customer_id):banking-api-config">
+        <ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core">
+            <ee:variables>
+                <ee:set-variable variableName="customer_id">attributes.uriParams.'customer_id'</ee:set-variable>
+            </ee:variables>
+        </ee:transform>
+		<logger level="INFO" message="delete:\customers\(customer_id):banking-api-config" />
+		<flow-ref doc:name="Flow Reference" doc:id="dae6b868-3b1a-42cf-b7eb-2b789491a3bd" name="updateFlow"/>
+    </flow>
+    <flow name="patch:\accounts\(account_id):application\json:banking-api-config">
+        <ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core">
+            <ee:variables>
+                <ee:set-variable variableName="account_id">attributes.uriParams.'account_id'</ee:set-variable>
+            </ee:variables>
+        </ee:transform>
+        <logger level="INFO" message="patch:\accounts\(account_id):application\json:banking-api-config" />
+    </flow>
+    <flow name="patch:\customers\(customer_id):application\json:banking-api-config">
+        <ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core">
+            <ee:variables>
+                <ee:set-variable variableName="customer_id">attributes.uriParams.'customer_id'</ee:set-variable>
+            </ee:variables>
+        </ee:transform>
+		<flow-ref doc:name="Flow Reference" doc:id="cb5c8201-d19f-4ed7-8c65-548bd6f5b612" name="updatFlow"/>
+		<logger level="INFO" message="patch:\customers\(customer_id):application\json:banking-api-config" />
+    </flow>
+    <flow name="get:\customers\(customer_id)\accounts:banking-api-config">
+        <ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core">
+            <ee:variables>
+                <ee:set-variable variableName="customer_id">attributes.uriParams.'customer_id'</ee:set-variable>
+            </ee:variables>
+        </ee:transform>
+		<logger level="INFO" message="get:\customers\(customer_id)\accounts:banking-api-config" />
+    </flow>
+    <flow name="banking-apiFlow" doc:id="abb3c974-10bc-45e0-a9a7-2ed9189c0a9d" >
+		<http:listener doc:name="Listener" doc:id="70974007-70f5-46df-a24c-ca20118625cc" config-ref="HTTP_Listener_config" path="api/employees"/>
+		<wsc:consume doc:name="Consume" doc:id="200215ee-e2e7-4b1a-a759-1ea7facbf8ec" config-ref="Web_Service_Consumer_Config" operation="GetAllEmployees"/>
+		<ee:transform doc:name="Transform Message" doc:id="7a1ed26e-9e2f-4573-8b9f-b56027b9ec8d">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+payload.body.GetAllEmployeesResponse
+]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<logger level="INFO" doc:name="Logger" doc:id="78cdbf1b-cbd5-4436-8e21-5f131c5d2201" message="new logged"/>
+	</flow>
+	<flow name="get:\customers:banking-api-config">
+		<logger level="INFO" message="get:\customers:banking-api-config" />
+		<flow-ref doc:name="Flow Reference" doc:id="4f1cb116-5583-496b-8a6e-ef9b5ca6e851" name="getallFlow"/>
+    </flow>
+    <flow name="get:\accounts\(account_id)\transactions:banking-api-config">
+        <ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core">
+            <ee:variables>
+                <ee:set-variable variableName="account_id">attributes.uriParams.'account_id'</ee:set-variable>
+            </ee:variables>
+        </ee:transform>
+        <logger level="INFO" message="get:\accounts\(account_id)\transactions:banking-api-config" />
+    </flow>
+    <flow name="get:\accounts\(account_id):banking-api-config">
+        <ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core">
+            <ee:variables>
+                <ee:set-variable variableName="account_id">attributes.uriParams.'account_id'</ee:set-variable>
+            </ee:variables>
+        </ee:transform>
+        <ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+  accountID: "12345",
+  accountType: "Savings",
+  accountNumber: "1234567890",
+  accountOwner: [
+    {
+      customerID: "8f19cb50-3f57-4d38",
+      displayName: "John Doe",
+      ssn: "123-456-7890"
+    }
+  ],
+  accountBalance: {
+    currency: "USD",
+    amount: "8457.90"
+  },
+  IBAN: "GB29NWBK60161331926820",
+  bank: {
+    bankCode: "NWBKGB2L",
+    bankName: "ACME Bank",
+    routingNumber: "432159876"
+  },
+  createdAt: "2012-03-07T00:00:00.001Z"
+}]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+    </flow>
+    <flow name="get:\customers\(customer_id):banking-api-config">
+        <ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core">
+            <ee:variables>
+                <ee:set-variable variableName="customer_id">attributes.uriParams.'customer_id'</ee:set-variable>
+            </ee:variables>
+        </ee:transform>
+		<flow-ref doc:name="Flow Reference" doc:id="b971ecdd-70f4-4f85-a158-a3887a3318e7" name="getoneFlow"/>
+    </flow>
+    <flow name="get:\transactions\(transaction_id):banking-api-config">
+        <ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core">
+            <ee:variables>
+                <ee:set-variable variableName="transaction_id">attributes.uriParams.'transaction_id'</ee:set-variable>
+            </ee:variables>
+        </ee:transform>
+        <ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+  transactionID: "b05f550d-1915-4def",
+  fromAccount: {
+    accountID: "12345",
+    accountType: "Savings",
+    accountNumber: "1234567890",
+    accountOwner: [
+      {
+        customerID: "8f19cb50-3f57-4d38",
+        displayName: "John Doe",
+        ssn: "123-456-7890"
+      }
+    ],
+    accountBalance: {
+      currency: "USD",
+      amount: "8457.90"
+    },
+    IBAN: "GB29NWBK60161331926820",
+    bank: {
+      bankCode: "NWBKGB2L",
+      bankName: "ACME Bank",
+      routingNumber: "432159876"
+    },
+    createdAt: "2012-03-07T00:00:00.001Z"
+  },
+  toAccount: {
+    accountID: "56437",
+    accountType: "Credit Card",
+    accountNumber: "4321987650",
+    accountOwner: [
+      {
+        customerID: "8f19cb50-3f57-4d38",
+        displayName: "John Doe",
+        ssn: "123-456-7890"
+      }
+    ],
+    IBAN: "GB29NWBK60161331926820",
+    bank: {
+      bankCode: "NWBKGB2L",
+      bankName: "ACME Bank",
+      routingNumber: "432159876"
+    },
+    accountBalance: {
+      currency: "USD",
+      amount: "698.00"
+    },
+    createdAt: "2012-03-07T00:00:00.001Z"
+  },
+  transactionType: "online",
+  transactionAmount: {
+    currency: "USD",
+    amount: "70.00"
+  },
+  newAccountBalance: {
+    currency: "USD",
+    amount: "8387.90"
+  },
+  postedAt: "2012-06-07T00:00:00.001Z"
+}]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+    </flow>
+    <flow name="post:\accounts:application\json:banking-api-config">
+        <logger level="INFO" message="post:\accounts:application\json:banking-api-config" />
+    </flow>
+    <flow name="post:\customers:application\json:banking-api-config">
+		<flow-ref doc:name="Flow Reference" doc:id="522b9f1a-8797-4ffb-ac5d-4e0be2c22b99" name="addFlow"/>
+    </flow>
+    <flow name="post:\transactions:application\json:banking-api-config">
+        <logger level="INFO" message="post:\transactions:application\json:banking-api-config" />
+    </flow>
+</mule>

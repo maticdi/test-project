@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:wsc="http://www.mulesoft.org/schema/mule/wsc" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/wsc http://www.mulesoft.org/schema/mule/wsc/current/mule-wsc.xsd">
+	<flow name="getoneFlow" doc:id="839810a6-ac23-4934-9922-56eadf400347" >
+		<ee:transform doc:name="Transform Message" doc:id="c8af8e47-5296-4433-8292-d56ae0c691b4" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/xml
+ns ns0 http://www.cdi.com/employees
+---
+{
+	ns0#GetEmployeeRequest: {
+		ns0#id: vars.customer_id as Number
+	}
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<wsc:consume doc:name="Consume" doc:id="34a9dc18-c1fd-45cb-854d-a514e51a78cd" config-ref="Web_Service_Consumer_Config" operation="GetEmployee"/>
+		<ee:transform doc:name="Transform Message" doc:id="35bc596a-0941-4e7c-97c0-60e55b9185ac" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+ns ns0 http://www.cdi.com/employees
+---
+{
+	firstName: payload.body.ns0#GetEmployeeResponse.ns0#Employee.ns0#firstName default "",
+	lastName: payload.body.ns0#GetEmployeeResponse.ns0#Employee.ns0#lastName default "",
+	address: {
+		zipCode: payload.body.ns0#GetEmployeeResponse.ns0#Employee.ns0#firstName default "",
+		country: payload.body.ns0#GetEmployeeResponse.ns0#Employee.ns0#lastName default "",
+		city: payload.body.ns0#GetEmployeeResponse.ns0#Employee.ns0#lastName default "",
+		addressLine1: payload.body.ns0#GetEmployeeResponse.ns0#Employee.ns0#lastName default "",
+		state: payload.body.ns0#GetEmployeeResponse.ns0#Employee.ns0#lastName default ""
+	},
+	phone: payload.body.ns0#GetEmployeeResponse.ns0#Employee.ns0#firstName default "",
+	prefix: payload.body.ns0#GetEmployeeResponse.ns0#Employee.ns0#firstName,
+	displayName: payload.body.ns0#GetEmployeeResponse.ns0#Employee.ns0#firstName default "",
+	customerID: payload.body.ns0#GetEmployeeResponse.ns0#Employee.ns0#department default "",
+	dateOfBirth: payload.body.ns0#GetEmployeeResponse.ns0#Employee.ns0#id as String default "",
+	suffix: payload.body.ns0#GetEmployeeResponse.ns0#Employee.ns0#department,
+	email: payload.body.ns0#GetEmployeeResponse.ns0#Employee.ns0#lastName default "",
+	ssn: payload.body.ns0#GetEmployeeResponse.ns0#Employee.ns0#id as String default ""
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</flow>
+</mule>
