@@ -4,8 +4,9 @@ http://www.mulesoft.org/schema/mule/wsc http://www.mulesoft.org/schema/mule/wsc/
 http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
     <apikit:config name="banking-api-config" api="resource::1c574041-5a1b-4ed6-8e0f-82442d4bf767:banking-api:1.0.2:raml:zip:banking-api.raml" outboundHeadersMapName="outboundHeaders" httpStatusVarName="httpStatus" />
 	<wsc:config name="Web_Service_Consumer_Config" doc:name="Web Service Consumer Config" doc:id="8d04ac2b-f44d-495f-b511-ac1c213a729f" >
-		<wsc:connection wsdlLocation="http://35.194.51.90:6062/ws/employees.wsdl" service="EmployeePortService" port="EmployeePortSoap11" address="http://35.194.51.90:6062/ws" />
+		<wsc:connection wsdlLocation="${url}" service="EmployeePortService" port="EmployeePortSoap11" address="http://35.194.51.90:6062/ws" />
 	</wsc:config>
+	<configuration-properties doc:name="Configuration properties" doc:id="1a1725e5-219c-41dc-b507-a802a11ab91e" file="url-dev.yaml" />
 	<flow name="banking-api-main">
         <http:listener config-ref="HTTP_Listener_config" path="/api/*">
             <http:response statusCode="#[vars.httpStatus default 200]">
